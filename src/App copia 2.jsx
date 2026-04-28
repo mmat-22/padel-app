@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 
 const jugadoresIniciales = [
@@ -11,45 +12,33 @@ const jugadoresIniciales = [
   "Jhonson",
 ];
 
-const frasesDiversion = [
-  "Palito Palito",
-  "Innecesario",
-  "Estás errático",
-  "Suave",
-  "Chimi del Frasco",
-  "Ayudaaaaa",
-];
-
-const mapPuntos = ["0", "15", "30", "40"];
+function mostrarPuntos(a, b) {
+  const map = ["0", "15", "30", "40"];
+  return [map[Math.min(a, 3)], map[Math.min(b, 3)]];
+}
 
 function textoPuntos(valor) {
-  return {
-    "0": "cero",
-    "15": "quince",
-    "30": "treinta",
-    "40": "cuarenta",
-  }[valor] || valor;
+  if (valor === "0") return "cero";
+  if (valor === "15") return "quince";
+  if (valor === "30") return "treinta";
+  if (valor === "40") return "cuarenta";
+  return valor;
 }
 
-function mostrarPuntos(a, b) {
-  return [mapPuntos[Math.min(a, 3)], mapPuntos[Math.min(b, 3)]];
-}
+function textoMarcadorPuntos(a, b) {
+  const [valorA, valorB] = mostrarPuntos(a, b);
+  const textoA = textoPuntos(valorA);
+  const textoB = textoPuntos(valorB);
 
-function textoMarcadorSegunSaque(a, b, servidor) {
-  const puntosSaca = servidor === "A" ? a : b;
-  const puntosRecibe = servidor === "A" ? b : a;
-
-  const [vs, vr] = mostrarPuntos(puntosSaca, puntosRecibe);
-
-  if (puntosSaca === 3 && puntosRecibe === 3) {
-    return "cuarenta iguales. punto de oro";
+  if (a === 3 && b === 3) return "cuarenta iguales. punto de oro";
+  if (valorA === valorB) {
+    if (valorA === "15") return "quince iguales";
+    if (valorA === "30") return "treinta iguales";
+    if (valorA === "40") return "cuarenta iguales";
+    if (valorA === "0") return "cero iguales";
   }
 
-  if (vs === vr) {
-    return `${textoPuntos(vs)} iguales`;
-  }
-
-  return `${textoPuntos(vs)} ${textoPuntos(vr)}`;
+  return `${textoA} ${textoB}`;
 }
 
 const estilos = {
@@ -189,27 +178,9 @@ const estilos = {
     border: "none",
     background: "linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)",
     color: "#ffffff",
-    fontSize: "24px",
+    fontSize: "28px",
     fontWeight: 800,
     boxShadow: "0 16px 26px rgba(37,99,235,0.28)",
-    lineHeight: 1.2,
-  },
-  filaFrases: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "10px",
-    marginTop: "12px",
-    marginBottom: "12px",
-  },
-  botonFrase: {
-    padding: "13px 10px",
-    borderRadius: "15px",
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%)",
-    color: "#ffffff",
-    fontSize: "15px",
-    fontWeight: 800,
-    boxShadow: "0 12px 22px rgba(109,40,217,0.28)",
   },
   botonSecundario: {
     width: "100%",
@@ -305,13 +276,12 @@ const estilos = {
 };
 
 export default function App() {
+  const [jugadores] = useState(jugadoresIniciales);
+
   const [teamA1, setTeamA1] = useState("");
   const [teamA2, setTeamA2] = useState("");
   const [teamB1, setTeamB1] = useState("");
   const [teamB2, setTeamB2] = useState("");
-
-  const nombreA = teamA1 && teamA2 ? `${teamA1} y ${teamA2}` : "Pareja A";
-  const nombreB = teamB1 && teamB2 ? `${teamB1} y ${teamB2}` : "Pareja B";
 
   const [pointsA, setPointsA] = useState(0);
   const [pointsB, setPointsB] = useState(0);
@@ -336,7 +306,6 @@ export default function App() {
   const [vozActiva, setVozActiva] = useState(false);
   const [estadoVoz, setEstadoVoz] = useState("Voz desactivada");
   const [historialPuntos, setHistorialPuntos] = useState([]);
-
   const vozRef = useRef(null);
 
   useEffect(() => {
@@ -353,17 +322,14 @@ export default function App() {
 
   const hablar = (texto) => {
     if (!vozActiva || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(texto);
     utterance.lang = "es-AR";
     utterance.rate = 1;
     utterance.pitch = 1;
-
     const voces = window.speechSynthesis.getVoices();
     const vozEspanol = voces.find((v) => v.lang?.toLowerCase().includes("es"));
     if (vozEspanol) utterance.voice = vozEspanol;
-
     vozRef.current = utterance;
     window.speechSynthesis.speak(utterance);
   };
@@ -373,10 +339,8 @@ export default function App() {
       setEstadoVoz("Este dispositivo no soporta voz en el navegador");
       return;
     }
-
     setVozActiva(true);
     setEstadoVoz("Voz activada");
-
     const utterance = new SpeechSynthesisUtterance("Voz activada para marcador de pádel");
     utterance.lang = "es-AR";
     window.speechSynthesis.speak(utterance);
@@ -390,14 +354,12 @@ export default function App() {
     setEstadoVoz("Voz desactivada");
   };
 
-  const anunciarMarcador = (a, b, servidorActual = servidor) => {
-    hablar(textoMarcadorSegunSaque(a, b, servidorActual));
+  const anunciarMarcador = (a, b) => {
+    hablar(textoMarcadorPuntos(a, b));
   };
 
   const jugadoresSeleccionados = [teamA1, teamA2, teamB1, teamB2];
-  const valido =
-    jugadoresSeleccionados.every(Boolean) &&
-    new Set(jugadoresSeleccionados).size === 4;
+  const valido = jugadoresSeleccionados.every(Boolean) && new Set(jugadoresSeleccionados).size === 4;
 
   const guardarSnapshot = () => {
     setHistorialPuntos((prev) => [
@@ -415,7 +377,6 @@ export default function App() {
 
   const volverAtras = () => {
     if (historialPuntos.length === 0) return;
-
     const ultimo = historialPuntos[historialPuntos.length - 1];
     setPointsA(ultimo.pointsA);
     setPointsB(ultimo.pointsB);
@@ -424,14 +385,7 @@ export default function App() {
     setHistGames(ultimo.histGames);
     setServidor(ultimo.servidor);
     setHistorialPuntos((prev) => prev.slice(0, -1));
-
-    hablar(
-      `Punto corregido. ${textoMarcadorSegunSaque(
-        ultimo.pointsA,
-        ultimo.pointsB,
-        ultimo.servidor
-      )}`
-    );
+    hablar(`Punto corregido. ${textoMarcadorPuntos(ultimo.pointsA, ultimo.pointsB)}`);
   };
 
   const reset = () => {
@@ -448,15 +402,12 @@ export default function App() {
   };
 
   const finalizarPartido = (winner, resultadoFinalA, resultadoFinalB, nuevoHistGames) => {
-    const winnerName = winner === "A" ? nombreA : nombreB;
-
     const partido = {
       fecha: new Date().toLocaleString("es-AR"),
       teamA: [teamA1, teamA2],
       teamB: [teamB1, teamB2],
       resultado: `${resultadoFinalA} - ${resultadoFinalB}`,
       winner,
-      winnerName,
       games: nuevoHistGames,
     };
 
@@ -475,57 +426,27 @@ export default function App() {
     localStorage.removeItem("padel_hist_games");
     localStorage.removeItem("padel_servidor");
 
-    hablar(`Partido para ${winnerName} por ${resultadoFinalA} a ${resultadoFinalB}`);
+    hablar(`Partido para la pareja ${winner} por ${resultadoFinalA} a ${resultadoFinalB}`);
   };
 
   const ganarGame = (team) => {
     const nuevoA = team === "A" ? gamesA + 1 : gamesA;
     const nuevoB = team === "B" ? gamesB + 1 : gamesB;
     const nuevoHistGames = [...histGames, team];
-    const nombreGanador = team === "A" ? nombreA : nombreB;
 
-    const lider = nuevoA > nuevoB ? nombreA : nombreB;
-    const diferencia = Math.abs(nuevoA - nuevoB);
-    const huboQuiebre = team !== servidor;
-
-    let relato = `Juego para ${nombreGanador}. Tanteador ${nuevoA} a ${nuevoB}.`;
-
-    if (huboQuiebre) {
-      relato += ` Quiebre de saque para ${nombreGanador}.`;
-    }
-
-    if (nuevoA === nuevoB) {
-      relato += ` Partido igualado en ${nuevoA}. Esto está para cualquiera.`;
-    } else if (diferencia >= 2) {
-      relato += ` ${lider} se escapan en el marcador.`;
-    } else {
-      relato += ` Arriba ${lider} por la mínima.`;
-    }
-
-    if ((nuevoA === 3 && nuevoB < 3) || (nuevoB === 3 && nuevoA < 3)) {
-      relato += ` Match point para ${lider}.`;
-    }
-
-    hablar(relato);
+    hablar(`Juego para la pareja ${team}. Marcador ${nuevoA} a ${nuevoB}`);
 
     if (nuevoA >= 4 || nuevoB >= 4) {
       finalizarPartido(team, nuevoA, nuevoB, nuevoHistGames);
       return;
     }
 
-    const nuevoServidor = servidor === "A" ? "B" : "A";
-    const nombreSaque = nuevoServidor === "A" ? nombreA : nombreB;
-
     setGamesA(nuevoA);
     setGamesB(nuevoB);
     setHistGames(nuevoHistGames);
     setPointsA(0);
     setPointsB(0);
-    setServidor(nuevoServidor);
-
-    setTimeout(() => {
-      hablar(`Cambio de saque. Saca ${nombreSaque}.`);
-    }, 4800);
+    setServidor((prev) => (prev === "A" ? "B" : "A"));
   };
 
   const punto = (team) => {
@@ -534,16 +455,15 @@ export default function App() {
 
     const nextA = team === "A" ? pointsA + 1 : pointsA;
     const nextB = team === "B" ? pointsB + 1 : pointsB;
-    const nombreGanador = team === "A" ? nombreA : nombreB;
 
     if (pointsA === 3 && pointsB === 3) {
-      hablar(`Punto de oro para ${nombreGanador}`);
+      hablar(`Punto de oro para la pareja ${team}`);
       ganarGame(team);
       return;
     }
 
     if ((nextA >= 4 || nextB >= 4) && Math.abs(nextA - nextB) >= 2) {
-      hablar(`Punto para ${nextA > nextB ? nombreA : nombreB}`);
+      hablar(`Punto para la pareja ${nextA > nextB ? "A" : "B"}`);
       ganarGame(nextA > nextB ? "A" : "B");
       return;
     }
@@ -583,57 +503,25 @@ export default function App() {
           <div style={estilos.fila2}>
             <div>
               <div style={estilos.etiquetaSuave}>Pareja A</div>
-              <select
-                style={estilos.select}
-                onChange={(e) => setTeamA1(e.target.value)}
-                value={teamA1}
-              >
+              <select style={estilos.select} onChange={(e) => setTeamA1(e.target.value)} value={teamA1}>
                 <option value="">Jugador A1</option>
-                {jugadoresIniciales.map((j) => (
-                  <option key={j} value={j}>
-                    {j}
-                  </option>
-                ))}
+                {jugadores.map((j) => <option key={j} value={j}>{j}</option>)}
               </select>
-              <select
-                style={estilos.select}
-                onChange={(e) => setTeamA2(e.target.value)}
-                value={teamA2}
-              >
+              <select style={estilos.select} onChange={(e) => setTeamA2(e.target.value)} value={teamA2}>
                 <option value="">Jugador A2</option>
-                {jugadoresIniciales.map((j) => (
-                  <option key={j} value={j}>
-                    {j}
-                  </option>
-                ))}
+                {jugadores.map((j) => <option key={j} value={j}>{j}</option>)}
               </select>
             </div>
 
             <div>
               <div style={estilos.etiquetaSuave}>Pareja B</div>
-              <select
-                style={estilos.select}
-                onChange={(e) => setTeamB1(e.target.value)}
-                value={teamB1}
-              >
+              <select style={estilos.select} onChange={(e) => setTeamB1(e.target.value)} value={teamB1}>
                 <option value="">Jugador B1</option>
-                {jugadoresIniciales.map((j) => (
-                  <option key={j} value={j}>
-                    {j}
-                  </option>
-                ))}
+                {jugadores.map((j) => <option key={j} value={j}>{j}</option>)}
               </select>
-              <select
-                style={estilos.select}
-                onChange={(e) => setTeamB2(e.target.value)}
-                value={teamB2}
-              >
+              <select style={estilos.select} onChange={(e) => setTeamB2(e.target.value)} value={teamB2}>
                 <option value="">Jugador B2</option>
-                {jugadoresIniciales.map((j) => (
-                  <option key={j} value={j}>
-                    {j}
-                  </option>
-                ))}
+                {jugadores.map((j) => <option key={j} value={j}>{j}</option>)}
               </select>
             </div>
           </div>
@@ -646,54 +534,30 @@ export default function App() {
         </div>
 
         <div style={estilos.tarjeta}>
-          <div style={estilos.saque}>Saca: {servidor === "A" ? nombreA : nombreB}</div>
+          <div style={estilos.saque}>Saca: Pareja {servidor}</div>
 
           <div style={estilos.bloqueScore}>
             <div style={estilos.marcadorGames}>{gamesA} - {gamesB}</div>
 
             <div style={estilos.filaPuntosPremium}>
-              <div style={estilos.marcadorPuntos}>
-                {puntosTexto[0]} - {puntosTexto[1]}
-              </div>
-              <button
-                style={estilos.botonAtras}
-                onClick={volverAtras}
-                title="Volver atrás un punto"
-              >
-                ↶
-              </button>
+              <div style={estilos.marcadorPuntos}>{puntosTexto[0]} - {puntosTexto[1]}</div>
+              <button style={estilos.botonAtras} onClick={volverAtras} title="Volver atrás un punto">↶</button>
             </div>
           </div>
 
           {puntoDeOro && <div style={estilos.avisoOro}>🔥 Punto de oro</div>}
 
           <div style={estilos.filaBotones}>
-            <button style={estilos.botonPrincipal} onClick={() => punto("A")}>
-              {nombreA}
-            </button>
-            <button style={estilos.botonPrincipal} onClick={() => punto("B")}>
-              {nombreB}
-            </button>
-          </div>
-
-          <div style={estilos.filaFrases}>
-            {frasesDiversion.map((frase) => (
-              <button
-                key={frase}
-                style={estilos.botonFrase}
-                onClick={() => hablar(frase)}
-              >
-                {frase}
-              </button>
-            ))}
+            <button style={estilos.botonPrincipal} onClick={() => punto("A")}>A</button>
+            <button style={estilos.botonPrincipal} onClick={() => punto("B")}>B</button>
           </div>
 
           <div style={estilos.filaAvisos}>
             <div style={gamePointA ? estilos.avisoActivo : estilos.avisoInactivo}>
-              {gamePointA ? `Game point ${nombreA}` : `Sin game point ${teamA1 && teamA2 ? teamA1 : "A"}`}
+              {gamePointA ? "Game point A" : "Sin game point A"}
             </div>
             <div style={gamePointB ? estilos.avisoActivo : estilos.avisoInactivo}>
-              {gamePointB ? `Game point ${nombreB}` : `Sin game point ${teamB1 && teamB2 ? teamB1 : "B"}`}
+              {gamePointB ? "Game point B" : "Sin game point B"}
             </div>
           </div>
 
@@ -702,9 +566,7 @@ export default function App() {
           </div>
 
           <div style={{ marginTop: "12px" }}>
-            <button style={estilos.botonSecundario} onClick={reset}>
-              Reiniciar partido actual
-            </button>
+            <button style={estilos.botonSecundario} onClick={reset}>Reiniciar partido actual</button>
           </div>
         </div>
 
@@ -716,21 +578,17 @@ export default function App() {
           ) : (
             historial.map((p, i) => (
               <div key={i} style={estilos.tarjetaHistorial}>
-                <div style={estilos.historialTitulo}>
-                  {p.teamA.join(" / ")} vs {p.teamB.join(" / ")}
-                </div>
+                <div style={estilos.historialTitulo}>{p.teamA.join(" / ")} vs {p.teamB.join(" / ")}</div>
                 <div style={estilos.historialTexto}>Resultado: {p.resultado}</div>
-                <div style={estilos.historialTexto}>Ganó: {p.winnerName || `Pareja ${p.winner}`}</div>
-                <div style={estilos.historialTexto}>Games: {Array.isArray(p.games) ? p.games.join(" · ") : "-"}</div>
+                <div style={estilos.historialTexto}>Ganó: Pareja {p.winner}</div>
+                <div style={estilos.historialTexto}>Games: {p.games.join(" · ")}</div>
                 <div style={estilos.historialTexto}>{p.fecha}</div>
               </div>
             ))
           )}
 
           <div style={{ marginTop: "12px" }}>
-            <button style={estilos.botonSecundario} onClick={borrarHistorial}>
-              Borrar historial
-            </button>
+            <button style={estilos.botonSecundario} onClick={borrarHistorial}>Borrar historial</button>
           </div>
         </div>
       </div>
